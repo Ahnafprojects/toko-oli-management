@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
+// Impor 'PaymentMethod' langsung dari Prisma Client
+import { Prisma, PaymentMethod } from '@prisma/client';
 
-// Skema divalidasi, ditambahkan paymentMethod
+// Menggunakan enum asli dari Prisma untuk validasi
 const drumSaleSchema = z.object({
   productId: z.string().cuid(),
   quantitySoldMl: z.coerce.number().int().positive('Jumlah harus lebih dari 0'),
   salePrice: z.coerce.number().min(0, 'Harga jual tidak valid'),
   userId: z.string().cuid(),
-  paymentMethod: z.enum(['CASH', 'TRANSFER', 'OTHER']).default('CASH'), // Menambahkan metode pembayaran
+  paymentMethod: z.nativeEnum(PaymentMethod).default('CASH'), // <-- INI PERBAIKANNYA
   notes: z.string().optional(),
 });
 
@@ -22,10 +23,9 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify(validation.error.format()), { status: 400 });
     }
 
-    // Ambil paymentMethod dari data yang divalidasi
     const { productId, quantitySoldMl, salePrice, userId, paymentMethod, notes } = validation.data;
 
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // 1. Ambil data drum
       const drum = await tx.product.findUnique({ where: { id: productId } });
 
@@ -42,20 +42,19 @@ export async function POST(request: Request) {
         data: { currentVolumeMl: { decrement: quantitySoldMl } },
       });
 
-      // 3. Buat transaksi utama dengan SEMUA field yang dibutuhkan
+      // 3. Buat transaksi utama
       const newTransaction = await tx.transaction.create({
         data: {
-          // Membuat nomor invoice unik berdasarkan waktu
           invoiceNumber: `INV-DRUM-${Date.now()}`,
           totalAmount: salePrice,
-          paidAmount: salePrice, // Asumsi langsung lunas
-          paymentMethod: paymentMethod, // Menggunakan data dari request
+          paidAmount: salePrice,
+          paymentMethod: paymentMethod, // Tipe datanya sekarang sudah cocok
           userId: userId,
         },
       });
 
       // 4. Catat penjualan eceran
-      const newSale = await tx.drumSale.create({
+      await tx.drumSale.create({
         data: {
           transactionId: newTransaction.id,
           productId,
@@ -65,11 +64,9 @@ export async function POST(request: Request) {
           notes,
         },
       });
-
-      return { newSale };
     });
 
-    return NextResponse.json(result.newSale, { status: 201 });
+    return NextResponse.json({ message: 'Penjualan drum berhasil dicatat' }, { status: 201 });
 
   } catch (error: any) {
     console.error("Drum sale failed:", error);
