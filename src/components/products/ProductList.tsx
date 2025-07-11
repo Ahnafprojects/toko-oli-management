@@ -12,11 +12,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MoreHorizontal, Edit, Trash2, Replace } from "lucide-react";
-import { Product, Category, Decimal } from '@prisma/client';
+// PERBAIKAN FINAL: Hapus 'Decimal' dari impor ini
+import { Product, Category } from '@prisma/client';
 import StockAdjustmentModal from './StockAdjustmentModal';
 
 // Tipe data yang aman untuk produk, sekarang menggunakan tipe Date
-// PERBAIKAN 1: Mengubah tipe data tanggal dari string ke Date
 type SafeProductWithCategory = Omit<Product, 'buyPrice' | 'sellPrice'> & {
   buyPrice: number;
   sellPrice: number;
@@ -47,7 +47,6 @@ export default function ProductList() {
       }
       const data = await response.json();
       
-      // PERBAIKAN 2: Konversi string tanggal dari JSON ke objek Date
       const formattedData = data.map((product: any) => ({
         ...product,
         buyPrice: parseFloat(product.buyPrice),
