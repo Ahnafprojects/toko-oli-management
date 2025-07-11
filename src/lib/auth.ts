@@ -1,4 +1,5 @@
 // lib/auth.ts
+
 import { AuthOptions } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -24,7 +25,7 @@ export const authOptions: AuthOptions = {
         });
 
         if (!user || !user.password) {
-          throw new Error('User tidak ditemukan');
+          throw new Error('User tidak ditemukan atau metode login salah');
         }
 
         const isPasswordCorrect = await bcrypt.compare(
@@ -36,13 +37,17 @@ export const authOptions: AuthOptions = {
           throw new Error('Password salah');
         }
 
+        // Return user object jika otorisasi berhasil
         return user;
       },
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: 'jwt',
+  },
   callbacks: {
     async jwt({ token, user }) {
+      // Saat login, 'user' object tersedia. Tambahkan properti custom ke token.
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -50,14 +55,17 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Setiap kali sesi diakses, tambahkan properti dari token ke object session.user
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.id = token.id;
+        session.user.role = token.role;
       }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  pages: { signIn: '/login' },
+  pages: {
+    signIn: '/login',
+  },
   debug: process.env.NODE_ENV === 'development',
 };
