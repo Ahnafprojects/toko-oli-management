@@ -5,12 +5,12 @@
   "prisma": {
     "seed": "ts-node --project tsconfig.seed.json prisma/seed.ts"
   },
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "npm install --legacy-peer-deps && next build",
+  "start": "next start",
+  "lint": "next lint"
+},
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -55,8 +55,8 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.0.13",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^18.3.0",
+   "@types/react": "^18.3.3",
+  "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.3.5",
