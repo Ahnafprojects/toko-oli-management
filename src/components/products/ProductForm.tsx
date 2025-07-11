@@ -42,10 +42,10 @@ const formSchema = z.object({
   sellPrice: z.coerce.number().min(0, 'Harga jual tidak valid'),
   stock: z.coerce.number().int().min(0, 'Stok tidak valid').optional(),
   minStock: z.coerce.number().int().min(0, 'Stok minimum tidak valid'),
-  // <-- PERBAIKAN 1: Tambahkan .nullable() agar menerima nilai null dari database
   description: z.string().nullable().optional(),
   isDrum: z.boolean().default(false),
-  initialVolumeMl: z.coerce.number().optional(),
+  // <-- PERBAIKAN FINAL: Tambahkan .nullable() di sini
+  initialVolumeMl: z.coerce.number().nullable().optional(),
 }).refine(data => !data.isDrum || (data.initialVolumeMl && data.initialVolumeMl > 0), {
     message: "Volume awal wajib diisi untuk produk drum",
     path: ["initialVolumeMl"],
@@ -66,16 +66,15 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    // <-- PERBAIKAN 2: Sesuaikan defaultValues untuk form baru agar lengkap
     defaultValues: initialData || {
       name: "",
       unit: "",
-      categoryId: "", // Tambahkan categoryId
+      categoryId: "",
       buyPrice: 0,
       sellPrice: 0,
       stock: 0,
       minStock: 5,
-      description: "", // string kosong valid karena schema diubah
+      description: "",
       isDrum: false,
       initialVolumeMl: 0,
     },
@@ -83,10 +82,10 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
   useEffect(() => {
     if (isEditMode && initialData) {
-      // Menangani nilai null dari description saat reset form
       const dataForForm = {
         ...initialData,
         description: initialData.description ?? "",
+        initialVolumeMl: initialData.initialVolumeMl ?? 0,
       };
       form.reset(dataForForm);
       setDisplayBuyPrice(formatRupiah(initialData.buyPrice));
@@ -106,7 +105,6 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      // Hanya kirim data yang relevan untuk setiap mode
       const payload = isEditMode
         ? {
             name: values.name,
@@ -192,14 +190,14 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
               
               {isDrum ? (
                 <>
-                  <FormField name="initialVolumeMl" render={({ field }) => ( <FormItem> <FormLabel>Volume Awal (ml)</FormLabel> <FormControl><Input type="number" placeholder="Contoh: 209000" {...field} disabled={isEditMode} /></FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField name="initialVolumeMl" render={({ field }) => ( <FormItem> <FormLabel>Volume Awal (ml)</FormLabel> <FormControl><Input type="number" placeholder="Contoh: 209000" {...field} value={field.value ?? 0} disabled={isEditMode} /></FormControl> <FormMessage /> </FormItem> )} />
                   <FormField name="unit" render={({ field }) => ( <FormItem> <FormLabel>Satuan Unit</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField name="stock" render={({ field }) => ( <FormItem> <FormLabel>Jumlah Drum</FormLabel> <FormControl><Input type="number" {...field} disabled={isEditMode} /></FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField name="stock" render={({ field }) => ( <FormItem> <FormLabel>Jumlah Drum</FormLabel> <FormControl><Input type="number" {...field} value={field.value ?? 0} disabled={isEditMode} /></FormControl> <FormMessage /> </FormItem> )} />
                 </>
               ) : (
                 <>
                   <FormField name="unit" render={({ field }) => ( <FormItem> <FormLabel>Satuan Unit</FormLabel> <FormControl><Input placeholder="Contoh: Botol, Liter" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField name="stock" render={({ field }) => ( <FormItem> <FormLabel>Stok Awal</FormLabel> <FormControl><Input type="number" placeholder="Contoh: 24" {...field} disabled={isEditMode} /></FormControl> <FormDescription>Stok hanya bisa diubah melalui menu Penyesuaian Stok.</FormDescription> <FormMessage /> </FormItem> )} />
+                  <FormField name="stock" render={({ field }) => ( <FormItem> <FormLabel>Stok Awal</FormLabel> <FormControl><Input type="number" placeholder="Contoh: 24" {...field} value={field.value ?? 0} disabled={isEditMode} /></FormControl> <FormDescription>Stok hanya bisa diubah melalui menu Penyesuaian Stok.</FormDescription> <FormMessage /> </FormItem> )} />
                 </>
               )}
 
