@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 'use client';
 
 import { useState, useEffect } from "react";
@@ -10,7 +9,7 @@ import { DatePickerWithRange } from "@/components/transactions/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import AiAssistant from "@/components/dashboard/AiAssistant"; // Import AI Assistant
+import AiAssistant from "@/components/dashboard/AiAssistant";
 
 // Tipe data yang diharapkan dari API
 interface DashboardData {
@@ -18,6 +17,9 @@ interface DashboardData {
     totalSales: number;
     totalProfit: number;
     transactionCount: number;
+  };
+  // <-- PERBAIKAN 1: Buat objek inventoryStats
+  inventoryStats: {
     lowStockCount: number;
   };
   customRangeStats: {
@@ -128,6 +130,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">Produk Stok Rendah</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          {/* <-- PERBAIKAN 2: Kode JSX ini sekarang sudah benar */}
           <CardContent><div className="text-2xl font-bold">{data.inventoryStats.lowStockCount}</div></CardContent>
         </Card>
       </div>
