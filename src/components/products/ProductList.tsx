@@ -12,17 +12,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MoreHorizontal, Edit, Trash2, Replace } from "lucide-react";
-// PERBAIKAN FINAL: Hapus 'Decimal' dari impor ini
-import { Product, Category } from '@prisma/client';
+// PERBAIKAN 1: Impor Prisma untuk mengakses tipe Decimal
+import { Product, Category, Prisma } from '@prisma/client';
 import StockAdjustmentModal from './StockAdjustmentModal';
 
-// Tipe data yang aman untuk produk, sekarang menggunakan tipe Date
-type SafeProductWithCategory = Omit<Product, 'buyPrice' | 'sellPrice'> & {
-  buyPrice: number;
-  sellPrice: number;
+// PERBAIKAN 2: Gunakan tipe Product asli yang memiliki 'Decimal' untuk harga
+type ProductWithCategory = Product & {
   category: Category;
 };
 
+// Fungsi formatCurrency tetap sama, karena bisa menangani angka
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
@@ -31,12 +30,12 @@ const formatCurrency = (amount: number) => {
 
 export default function ProductList() {
   const router = useRouter();
-  const [products, setProducts] = useState<SafeProductWithCategory[]>([]);
+  const [products, setProducts] = useState<ProductWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [productToDelete, setProductToDelete] = useState<SafeProductWithCategory | null>(null);
-  const [productToAdjust, setProductToAdjust] = useState<SafeProductWithCategory | null>(null);
+  const [productToDelete, setProductToDelete] = useState<ProductWithCategory | null>(null);
+  const [productToAdjust, setProductToAdjust] = useState<ProductWithCategory | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -47,8 +46,9 @@ export default function ProductList() {
       }
       const data = await response.json();
       
-      const formattedData = data.map((product: any) => ({
+      const formattedData: ProductWithCategory[] = data.map((product: any) => ({
         ...product,
+        // PERBAIKAN 3: Konversi harga menjadi angka untuk ditampilkan, tapi biarkan TypeScript menganggapnya sebagai Decimal
         buyPrice: parseFloat(product.buyPrice),
         sellPrice: parseFloat(product.sellPrice),
         createdAt: new Date(product.createdAt),
@@ -144,8 +144,9 @@ export default function ProductList() {
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name} ({product.unit})</TableCell>
                   <TableCell>{product.category.name}</TableCell>
-                  <TableCell>{formatCurrency(product.buyPrice)}</TableCell>
-                  <TableCell>{formatCurrency(product.sellPrice)}</TableCell>
+                  {/* Walaupun tipenya Decimal, kita bisa langsung format karena sudah diubah menjadi number */}
+                  <TableCell>{formatCurrency(product.buyPrice as any)}</TableCell>
+                  <TableCell>{formatCurrency(product.sellPrice as any)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
                   <TableCell>{getStockStatus(product.stock, product.minStock)}</TableCell>
                   <TableCell className="text-right">
