@@ -1,12 +1,9 @@
-// src/app/api/products/[id]/route.ts
-
-// 1. IMPOR YANG DIBUTUHKAN
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 
-// 2. SKEMA VALIDASI (jika Anda menggunakannya untuk PUT)
+// Skema validasi untuk update produk (opsional, tapi praktik yang baik)
 const productUpdateSchema = z.object({
   name: z.string().min(3, 'Nama produk minimal 3 karakter'),
   unit: z.string().min(1, 'Satuan unit wajib diisi'),
@@ -17,32 +14,42 @@ const productUpdateSchema = z.object({
   description: z.string().optional(),
 });
 
-// 3. HANDLER UNTUK GET
+
+/**
+ * Handler untuk GET (Mengambil satu produk berdasarkan ID)
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+
   try {
     const product = await prisma.product.findUnique({
-      where: { id },
+      where: { id: id },
     });
 
     if (!product) {
-      return NextResponse.json({ message: 'Produk tidak ditemukan' }, { status: 404 });
+      return NextResponse.json({ message: "Produk tidak ditemukan" }, { status: 404 });
     }
+
     return NextResponse.json(product);
+
   } catch (error) {
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    console.error(`Error fetching product with id ${id}:`, error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// 4. HANDLER UNTUK PUT
+/**
+ * Handler untuk PUT (Update/Edit produk)
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+
   try {
     const body = await request.json();
     const validation = productUpdateSchema.safeParse(body);
@@ -67,26 +74,38 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedProduct);
+
   } catch (error) {
+    console.error(`Error updating product with id ${id}:`, error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-// 5. HANDLER UNTUK DELETE
+/**
+ * Handler untuk DELETE (Menghapus produk)
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+
   try {
     await prisma.product.delete({
-      where: { id },
+      where: { id: id },
     });
-    return new NextResponse(null, { status: 204 });
+    return new NextResponse(null, { status: 204 }); // 204 No Content
+
   } catch (error) {
+    console.error(`Error deleting product with id ${id}:`, error);
+
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-      return new NextResponse('Tidak dapat menghapus produk karena terikat dengan transaksi.', { status: 409 });
+      return new NextResponse(
+        'Tidak dapat menghapus produk karena sudah terikat dengan data lain (misalnya transaksi).',
+        { status: 409 } // 409 Conflict
+      );
     }
-    return new NextResponse('Internal Server Error', { status: 500 });
+
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
