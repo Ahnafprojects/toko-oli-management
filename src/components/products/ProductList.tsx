@@ -1,4 +1,3 @@
-// src/components/products/ProductList.tsx
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,17 +12,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MoreHorizontal, Edit, Trash2, Replace } from "lucide-react";
-import { Product, Category } from '@prisma/client';
+import { Product, Category, Decimal } from '@prisma/client';
 import StockAdjustmentModal from './StockAdjustmentModal';
 
-// Tipe data yang aman untuk produk yang diterima dari server
-type SafeProductWithCategory = Omit<Product, 'buyPrice' | 'sellPrice' | 'createdAt' | 'updatedAt' | 'expiredDate'> & {
+// Tipe data yang aman untuk produk, sekarang menggunakan tipe Date
+// PERBAIKAN 1: Mengubah tipe data tanggal dari string ke Date
+type SafeProductWithCategory = Omit<Product, 'buyPrice' | 'sellPrice'> & {
   buyPrice: number;
   sellPrice: number;
   category: Category;
-  createdAt: string;
-  updatedAt: string;
-  expiredDate: string | null;
 };
 
 const formatCurrency = (amount: number) => {
@@ -49,10 +46,20 @@ export default function ProductList() {
         throw new Error('Gagal memuat data produk');
       }
       const data = await response.json();
-      setProducts(data);
+      
+      // PERBAIKAN 2: Konversi string tanggal dari JSON ke objek Date
+      const formattedData = data.map((product: any) => ({
+        ...product,
+        buyPrice: parseFloat(product.buyPrice),
+        sellPrice: parseFloat(product.sellPrice),
+        createdAt: new Date(product.createdAt),
+        updatedAt: new Date(product.updatedAt),
+        expiredDate: product.expiredDate ? new Date(product.expiredDate) : null,
+      }));
+
+      setProducts(formattedData);
     } catch (error) {
       console.error(error);
-      // Anda bisa menambahkan state untuk menampilkan pesan eror di UI
     } finally {
       setLoading(false);
     }
@@ -150,7 +157,6 @@ export default function ProductList() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      {/* PERBAIKAN: Menambahkan kelas bg-white */}
                       <DropdownMenuContent align="end" className="bg-white">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => router.push(`/products/edit/${product.id}`)}>
