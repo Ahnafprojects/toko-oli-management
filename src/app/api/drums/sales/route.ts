@@ -3,11 +3,13 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
+// Skema divalidasi, ditambahkan paymentMethod
 const drumSaleSchema = z.object({
   productId: z.string().cuid(),
   quantitySoldMl: z.coerce.number().int().positive('Jumlah harus lebih dari 0'),
   salePrice: z.coerce.number().min(0, 'Harga jual tidak valid'),
   userId: z.string().cuid(),
+  paymentMethod: z.enum(['CASH', 'TRANSFER', 'OTHER']).default('CASH'), // Menambahkan metode pembayaran
   notes: z.string().optional(),
 });
 
@@ -20,13 +22,12 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify(validation.error.format()), { status: 400 });
     }
 
-    const { productId, quantitySoldMl, salePrice, userId, notes } = validation.data;
+    // Ambil paymentMethod dari data yang divalidasi
+    const { productId, quantitySoldMl, salePrice, userId, paymentMethod, notes } = validation.data;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Ambil data drum saat ini
-      const drum = await tx.product.findUnique({
-        where: { id: productId },
-      });
+      // 1. Ambil data drum
+      const drum = await tx.product.findUnique({ where: { id: productId } });
 
       if (!drum || !drum.isDrum || drum.currentVolumeMl === null) {
         throw new Error('Produk drum tidak valid.');
@@ -36,28 +37,27 @@ export async function POST(request: Request) {
       }
 
       // 2. Kurangi volume drum
-      const updatedDrum = await tx.product.update({
+      await tx.product.update({
         where: { id: productId },
-        data: {
-          currentVolumeMl: {
-            decrement: quantitySoldMl,
-          },
-        },
+        data: { currentVolumeMl: { decrement: quantitySoldMl } },
       });
 
-      // 3. Buat transaksi utama
+      // 3. Buat transaksi utama dengan SEMUA field yang dibutuhkan
       const newTransaction = await tx.transaction.create({
         data: {
-          userId: userId,
+          // Membuat nomor invoice unik berdasarkan waktu
+          invoiceNumber: `INV-DRUM-${Date.now()}`,
           totalAmount: salePrice,
-          // Field 'type' dihapus karena tidak ada di skema Anda
+          paidAmount: salePrice, // Asumsi langsung lunas
+          paymentMethod: paymentMethod, // Menggunakan data dari request
+          userId: userId,
         },
       });
 
-      // 4. Catat penjualan eceran dengan transactionId yang benar
+      // 4. Catat penjualan eceran
       const newSale = await tx.drumSale.create({
         data: {
-          transactionId: newTransaction.id, // Menggunakan ID dari transaksi baru
+          transactionId: newTransaction.id,
           productId,
           quantitySoldMl,
           salePrice: new Prisma.Decimal(salePrice),
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         },
       });
 
-      return { updatedDrum, newSale, newTransaction };
+      return { newSale };
     });
 
     return NextResponse.json(result.newSale, { status: 201 });
