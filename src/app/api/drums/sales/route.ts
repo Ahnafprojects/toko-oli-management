@@ -1,4 +1,3 @@
-// src/app/api/drums/sales/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
@@ -46,20 +45,19 @@ export async function POST(request: Request) {
         },
       });
 
-      // <-- 3. BUAT TRANSAKSI UTAMA (INI BAGIAN BARU) -->
+      // 3. Buat transaksi utama
       const newTransaction = await tx.transaction.create({
         data: {
           userId: userId,
           totalAmount: salePrice,
-          type: 'DRUM_SALE', // Sesuaikan dengan tipe transaksi Anda
-          // Anda mungkin perlu menambahkan field lain di sini sesuai skema Transaction
+          // Field 'type' dihapus karena tidak ada di skema Anda
         },
       });
 
-      // <-- 4. CATAT PENJUALAN ECERAN DENGAN TRANSACTION ID (INI BAGIAN YANG DIPERBAIKI) -->
+      // 4. Catat penjualan eceran dengan transactionId yang benar
       const newSale = await tx.drumSale.create({
         data: {
-          transactionId: newTransaction.id, // <-- Menggunakan ID dari transaksi baru
+          transactionId: newTransaction.id, // Menggunakan ID dari transaksi baru
           productId,
           quantitySoldMl,
           salePrice: new Prisma.Decimal(salePrice),
