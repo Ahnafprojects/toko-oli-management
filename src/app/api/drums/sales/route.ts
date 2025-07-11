@@ -10,7 +10,7 @@ const drumSaleSchema = z.object({
   quantitySoldMl: z.coerce.number().int().positive('Jumlah harus lebih dari 0'),
   salePrice: z.coerce.number().min(0, 'Harga jual tidak valid'),
   userId: z.string().cuid(),
-  paymentMethod: z.nativeEnum(PaymentMethod).default('CASH'), // <-- INI PERBAIKANNYA
+  paymentMethod: z.nativeEnum(PaymentMethod).default('Tunai'), // <-- PERBAIKAN FINAL
   notes: z.string().optional(),
 });
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
           invoiceNumber: `INV-DRUM-${Date.now()}`,
           totalAmount: salePrice,
           paidAmount: salePrice,
-          paymentMethod: paymentMethod, // Tipe datanya sekarang sudah cocok
+          paymentMethod: paymentMethod,
           userId: userId,
         },
       });
