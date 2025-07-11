@@ -1,4 +1,3 @@
-// src/components/products/ProductForm.tsx
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +42,8 @@ const formSchema = z.object({
   sellPrice: z.coerce.number().min(0, 'Harga jual tidak valid'),
   stock: z.coerce.number().int().min(0, 'Stok tidak valid').optional(),
   minStock: z.coerce.number().int().min(0, 'Stok minimum tidak valid'),
-  description: z.string().optional(),
+  // <-- PERBAIKAN 1: Tambahkan .nullable() agar menerima nilai null dari database
+  description: z.string().nullable().optional(),
   isDrum: z.boolean().default(false),
   initialVolumeMl: z.coerce.number().optional(),
 }).refine(data => !data.isDrum || (data.initialVolumeMl && data.initialVolumeMl > 0), {
@@ -66,21 +66,29 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    // <-- PERBAIKAN 2: Sesuaikan defaultValues untuk form baru agar lengkap
     defaultValues: initialData || {
       name: "",
       unit: "",
+      categoryId: "", // Tambahkan categoryId
       buyPrice: 0,
       sellPrice: 0,
       stock: 0,
       minStock: 5,
-      description: "",
+      description: "", // string kosong valid karena schema diubah
       isDrum: false,
+      initialVolumeMl: 0,
     },
   });
 
   useEffect(() => {
     if (isEditMode && initialData) {
-      form.reset(initialData);
+      // Menangani nilai null dari description saat reset form
+      const dataForForm = {
+        ...initialData,
+        description: initialData.description ?? "",
+      };
+      form.reset(dataForForm);
       setDisplayBuyPrice(formatRupiah(initialData.buyPrice));
       setDisplaySellPrice(formatRupiah(initialData.sellPrice));
     }
@@ -128,7 +136,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             errorMessage = errorData.message;
           } else {
             const firstError = Object.values(errorData).find(
-                (field: any) => field?._errors?.length > 0
+               (field: any) => field?._errors?.length > 0
             ) as { _errors: string[] } | undefined;
             if (firstError) {
                 errorMessage = firstError._errors[0];
@@ -198,7 +206,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
               <FormField name="buyPrice" render={({ field }) => ( <FormItem> <FormLabel>Harga Beli (per Satuan)</FormLabel> <FormControl><Input type="text" value={displayBuyPrice} onChange={(e) => { setDisplayBuyPrice(formatRupiah(e.target.value)); field.onChange(parseRupiah(e.target.value)); }} /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField name="sellPrice" render={({ field }) => ( <FormItem> <FormLabel>Harga Jual (per Satuan)</FormLabel> <FormControl><Input type="text" value={displaySellPrice} onChange={(e) => { setDisplaySellPrice(formatRupiah(e.target.value)); field.onChange(parseRupiah(e.target.value)); }} /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField name="minStock" render={({ field }) => ( <FormItem> <FormLabel>Stok Minimum</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField name="description" render={({ field }) => ( <FormItem className="md:col-span-2"> <FormLabel>Deskripsi</FormLabel> <FormControl><Textarea placeholder="Catatan tambahan..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField name="description" render={({ field }) => ( <FormItem className="md:col-span-2"> <FormLabel>Deskripsi</FormLabel> <FormControl><Textarea placeholder="Catatan tambahan..." {...field} value={field.value ?? ""} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
