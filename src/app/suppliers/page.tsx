@@ -1,5 +1,8 @@
 // src/app/suppliers/page.tsx
 import prisma from '@/lib/prisma';
+export const dynamic = 'force-dynamic'; // di atas file `route.ts`
+
+
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
