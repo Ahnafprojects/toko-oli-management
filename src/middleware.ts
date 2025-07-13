@@ -8,11 +8,14 @@ export default withAuth({
 })
 
 export const config = { 
-  // Tentukan halaman mana saja yang ingin Anda amankan
+  // Melindungi semua halaman ini dan sub-halamannya
   matcher: [
+    "/home/:path*",
     "/dashboard/:path*",
-    "/products/:path*",
+    "/transactions/:path*",
+    "/stock-history/:path*",
     "/pos/:path*",
+    "/products/:path*",
     "/suppliers/:path*",
   ] 
 }
