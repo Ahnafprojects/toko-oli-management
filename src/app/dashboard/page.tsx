@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, AlertTriangle, TrendingUp } from "lucide-react";
+import { DollarSign, ShoppingCart, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
 import { DatePickerWithRange } from "@/components/transactions/DateRangePicker";
 import { DateRange } from "react-day-picker";
-import { subDays } from "date-fns";
+import { subDays, format } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
 import AiAssistant from "@/components/dashboard/AiAssistant";
 
@@ -18,7 +19,6 @@ interface DashboardData {
     totalProfit: number;
     transactionCount: number;
   };
-  // <-- PERBAIKAN 1: Buat objek inventoryStats
   inventoryStats: {
     lowStockCount: number;
   };
@@ -31,10 +31,21 @@ interface DashboardData {
     name: string;
     totalSold: number;
   }[];
+  monthStats: {
+    totalSales: number;
+    totalProfit: number;
+    transactionCount: number;
+  };
+  yearStats: {
+    totalSales: number;
+    totalProfit: number;
+    transactionCount: number;
+  };
 }
 
 const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
+// Komponen Skeleton hanya didefinisikan satu kali
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -98,40 +109,53 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
+  const currentMonthName = format(new Date(), 'MMMM yyyy', { locale: id });
+  const currentYear = format(new Date(), 'yyyy');
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dashboard Utama</h1>
       
       {/* Kartu Statistik Hari Ini */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Statistik Hari Ini</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Penjualan Hari Ini</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                <CardContent><div className="text-2xl font-bold">{formatCurrency(data.todayStats.totalSales)}</div></CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Keuntungan Hari Ini</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                <CardContent><div className="text-2xl font-bold">{formatCurrency(data.todayStats.totalProfit)}</div></CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Transaksi Hari Ini</CardTitle><ShoppingCart className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                <CardContent><div className="text-2xl font-bold">{data.todayStats.transactionCount}</div></CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Produk Stok Rendah</CardTitle><AlertTriangle className="h-4 w-4 text-muted-foreground" /></CardHeader>
+                <CardContent><div className="text-2xl font-bold">{data.inventoryStats.lowStockCount}</div></CardContent>
+            </Card>
+        </div>
+      </div>
+      
+      {/* KARTU STATISTIK BULANAN & TAHUNAN */}
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Penjualan Hari Ini</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{formatCurrency(data.todayStats.totalSales)}</div></CardContent>
+            <CardHeader><CardTitle>Statistik Bulan Ini ({currentMonthName})</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center"><DollarSign className="h-5 w-5 mr-3 text-green-500"/><p>Total Penjualan: <span className="font-bold">{formatCurrency(data.monthStats.totalSales)}</span></p></div>
+                <div className="flex items-center"><TrendingUp className="h-5 w-5 mr-3 text-green-500"/><p>Estimasi Keuntungan: <span className="font-bold">{formatCurrency(data.monthStats.totalProfit)}</span></p></div>
+                <div className="flex items-center"><ShoppingCart className="h-5 w-5 mr-3 text-green-500"/><p>Jumlah Transaksi: <span className="font-bold">{data.monthStats.transactionCount}</span></p></div>
+            </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Keuntungan Hari Ini</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{formatCurrency(data.todayStats.totalProfit)}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transaksi Hari Ini</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{data.todayStats.transactionCount}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Produk Stok Rendah</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          {/* <-- PERBAIKAN 2: Kode JSX ini sekarang sudah benar */}
-          <CardContent><div className="text-2xl font-bold">{data.inventoryStats.lowStockCount}</div></CardContent>
+            <CardHeader><CardTitle>Statistik Tahun Ini ({currentYear})</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center"><DollarSign className="h-5 w-5 mr-3 text-blue-500"/><p>Total Penjualan: <span className="font-bold">{formatCurrency(data.yearStats.totalSales)}</span></p></div>
+                <div className="flex items-center"><TrendingUp className="h-5 w-5 mr-3 text-blue-500"/><p>Estimasi Keuntungan: <span className="font-bold">{formatCurrency(data.yearStats.totalProfit)}</span></p></div>
+                <div className="flex items-center"><ShoppingCart className="h-5 w-5 mr-3 text-blue-500"/><p>Jumlah Transaksi: <span className="font-bold">{data.yearStats.transactionCount}</span></p></div>
+            </CardContent>
         </Card>
       </div>
 
@@ -148,18 +172,9 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-                    <div>
-                        <p className="text-sm text-muted-foreground">Total Penjualan</p>
-                        <p className="text-xl font-bold">{formatCurrency(data.customRangeStats.totalSales)}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Estimasi Keuntungan</p>
-                        <p className="text-xl font-bold text-green-600">{formatCurrency(data.customRangeStats.totalProfit)}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Total Transaksi</p>
-                        <p className="text-xl font-bold">{data.customRangeStats.transactionCount}</p>
-                    </div>
+                    <div><p className="text-sm text-muted-foreground">Total Penjualan</p><p className="text-xl font-bold">{formatCurrency(data.customRangeStats.totalSales)}</p></div>
+                    <div><p className="text-sm text-muted-foreground">Estimasi Keuntungan</p><p className="text-xl font-bold text-green-600">{formatCurrency(data.customRangeStats.totalProfit)}</p></div>
+                    <div><p className="text-sm text-muted-foreground">Total Transaksi</p><p className="text-xl font-bold">{data.customRangeStats.transactionCount}</p></div>
                 </CardContent>
             </Card>
             <Card>
@@ -174,9 +189,7 @@ export default function DashboardPage() {
                         <span className="truncate pr-2">{index + 1}. {product.name}</span>
                         <span className="font-bold flex-shrink-0">{product.totalSold} terjual</span>
                         </li>
-                    )) : (
-                        <p className="text-sm text-muted-foreground">Tidak ada data penjualan.</p>
-                    )}
+                    )) : (<p className="text-sm text-muted-foreground">Tidak ada data penjualan.</p>)}
                     </ul>
                 </CardContent>
             </Card>

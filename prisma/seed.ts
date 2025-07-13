@@ -1,32 +1,31 @@
-// prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Start seeding ...');
+  console.log(`Mulai proses seeding ...`);
 
-  // Bagian ini akan membuat kategori jika belum ada
-  await prisma.category.upsert({
-    where: { name: 'Mesin Mobil' },
-    update: {},
-    create: { name: 'Mesin Mobil' },
-  });
+  // Menggunakan upsert untuk membuat kategori jika belum ada, atau membiarkannya jika sudah ada.
+  // Ini lebih aman daripada menghapus semua data.
+  const categories = [
+    { name: 'Oli Mesin Mobil' },
+    { name: 'Oli Mesin Motor' },
+    { name: 'Oli Gardan' },
+    { name: 'Minyak Rem' },
+    { name: 'Filter Oli' },
+    { name: 'Lainnya' },
+  ];
 
-  await prisma.category.upsert({
-    where: { name: 'Mesin Motor' },
-    update: {},
-    create: { name: 'Mesin Motor' },
-  });
+  for (const cat of categories) {
+    const category = await prisma.category.upsert({
+      where: { name: cat.name },
+      update: {},
+      create: { name: cat.name },
+    });
+    console.log(`Kategori '${category.name}' berhasil dibuat/ditemukan.`);
+  }
 
-  await prisma.category.upsert({
-    where: { name: 'Gardan' },
-    update: {},
-    create: { name: 'Gardan' },
-  });
-
-  console.log('Categories have been seeded.');
-
-  // ... sisa kode untuk produk, dll.
+  console.log(`Seeding selesai.`);
 }
 
 main()

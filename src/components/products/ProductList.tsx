@@ -12,16 +12,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MoreHorizontal, Edit, Trash2, Replace } from "lucide-react";
-// PERBAIKAN 1: Impor Prisma untuk mengakses tipe Decimal
 import { Product, Category, Prisma } from '@prisma/client';
 import StockAdjustmentModal from './StockAdjustmentModal';
 
-// PERBAIKAN 2: Gunakan tipe Product asli yang memiliki 'Decimal' untuk harga
 type ProductWithCategory = Product & {
   category: Category;
 };
 
-// Fungsi formatCurrency tetap sama, karena bisa menangani angka
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
@@ -48,7 +45,6 @@ export default function ProductList() {
       
       const formattedData: ProductWithCategory[] = data.map((product: any) => ({
         ...product,
-        // PERBAIKAN 3: Konversi harga menjadi angka untuk ditampilkan, tapi biarkan TypeScript menganggapnya sebagai Decimal
         buyPrice: parseFloat(product.buyPrice),
         sellPrice: parseFloat(product.sellPrice),
         createdAt: new Date(product.createdAt),
@@ -144,7 +140,6 @@ export default function ProductList() {
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name} ({product.unit})</TableCell>
                   <TableCell>{product.category.name}</TableCell>
-                  {/* Walaupun tipenya Decimal, kita bisa langsung format karena sudah diubah menjadi number */}
                   <TableCell>{formatCurrency(product.buyPrice as any)}</TableCell>
                   <TableCell>{formatCurrency(product.sellPrice as any)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
@@ -157,18 +152,22 @@ export default function ProductList() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white">
+                      <DropdownMenuContent align="end" className="bg-white z-50">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => router.push(`/products/edit/${product.id}`)}>
+                        {/* PERBAIKAN DI BAWAH INI */}
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); router.push(`/products/edit/${product.id}`) }}>
                           <Edit className="mr-2 h-4 w-4" />
                           <span>Edit Detail</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setProductToAdjust(product)}>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setProductToAdjust(product) }}>
                           <Replace className="mr-2 h-4 w-4" />
                           <span>Sesuaikan Stok</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setProductToDelete(product)}>
+                        <DropdownMenuItem 
+                          className="text-red-600 focus:text-red-600 focus:bg-red-50" 
+                          onSelect={(e) => { e.preventDefault(); setProductToDelete(product) }}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Hapus</span>
                         </DropdownMenuItem>
