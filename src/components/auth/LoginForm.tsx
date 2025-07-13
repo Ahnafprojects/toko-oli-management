@@ -1,4 +1,3 @@
-// src/components/auth/LoginForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -74,33 +73,12 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
-      <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 backdrop-blur-md relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-        <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-400/10 rounded-full blur-2xl"></div>
-
-        <CardHeader className="text-center pt-8 pb-4">
-          <div className="mx-auto w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-3">
-            <svg
-              className="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Selamat Datang Kembali
-          </CardTitle>
-          <CardDescription className="text-gray-600 text-sm mt-1">
-            Masuk untuk melanjutkan ke sistem Anda
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 px-4">
+      <Card className="w-full max-w-md shadow-xl border-0 rounded-2xl">
+        <CardHeader className="text-center space-y-1">
+          <CardTitle className="text-2xl font-bold text-gray-800">Login</CardTitle>
+          <CardDescription className="text-gray-500 text-sm">
+            Masuk ke akun Anda untuk mulai mengelola toko oli
           </CardDescription>
         </CardHeader>
 
@@ -136,24 +114,22 @@ export default function LoginForm() {
                       <div className="relative">
                         <Input
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="Masukkan password"
+                          placeholder="Minimal 6 karakter"
                           {...field}
                           className="h-11 pr-10"
                         />
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           onClick={() => setShowPassword((prev) => !prev)}
-                          className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                           tabIndex={-1}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="w-5 h-5" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <Eye className="w-5 h-5" />
                           )}
-                        </Button>
+                        </button>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -169,7 +145,7 @@ export default function LoginForm() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full h-11 font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-200"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Loading...' : 'Login'}
@@ -178,7 +154,7 @@ export default function LoginForm() {
           </Form>
         </CardContent>
 
-        <CardFooter className="text-center text-sm px-8 pb-8 text-gray-600 justify-center">
+        <CardFooter className="text-center text-sm px-8 pb-6 text-gray-600 justify-center">
           Belum punya akun?{' '}
           <Link
             href="/register"
