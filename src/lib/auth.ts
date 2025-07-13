@@ -1,6 +1,6 @@
-// lib/auth.ts
+// src/lib/auth.ts
 
-import { AuthOptions } from 'next-auth';
+import { AuthOptions, User } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import prisma from '@/lib/prisma';
@@ -17,15 +17,17 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email dan password wajib diisi');
+          // Jika input tidak lengkap, tolak dengan mengembalikan null
+          return null;
         }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
+        // Jika user tidak ditemukan atau tidak punya password, tolak.
         if (!user || !user.password) {
-          throw new Error('User tidak ditemukan atau metode login salah');
+          return null;
         }
 
         const isPasswordCorrect = await bcrypt.compare(
@@ -33,11 +35,12 @@ export const authOptions: AuthOptions = {
           user.password
         );
 
+        // Jika password salah, tolak.
         if (!isPasswordCorrect) {
-          throw new Error('Password salah');
+          return null;
         }
 
-        // Return user object jika otorisasi berhasil
+        // Jika semua benar, kembalikan objek user untuk memulai sesi.
         return user;
       },
     }),
@@ -47,15 +50,13 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Saat login, 'user' object tersedia. Tambahkan properti custom ke token.
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = user.role as 'ADMIN' | 'MANAGER' | 'KASIR';
       }
       return token;
     },
     async session({ session, token }) {
-      // Setiap kali sesi diakses, tambahkan properti dari token ke object session.user
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
@@ -66,6 +67,8 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',
+    // Halaman error akan otomatis ditangani oleh NextAuth
+    // dengan mengarahkan kembali ke halaman login dengan query ?error=...
   },
   debug: process.env.NODE_ENV === 'development',
 };
