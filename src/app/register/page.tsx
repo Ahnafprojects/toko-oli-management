@@ -26,7 +26,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); // toggle visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -57,8 +57,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 px-4">
-      <Card className="w-full max-w-md bg-white/90 shadow-xl border border-gray-200 rounded-xl">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+      <Card className="w-full max-w-md shadow-lg border border-gray-200 rounded-xl bg-white">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-800">
             Registrasi Akun Baru
@@ -140,7 +140,7 @@ export default function RegisterPage() {
           </form>
         </CardContent>
 
-        <CardFooter className="text-center text-sm text-gray-600">
+        <CardFooter className="text-center text-sm text-gray-600 justify-center">
           Sudah punya akun?{' '}
           <Link href="/login" className="text-blue-600 hover:underline ml-1">
             Login di sini

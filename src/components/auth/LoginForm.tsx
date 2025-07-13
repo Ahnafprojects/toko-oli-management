@@ -18,15 +18,6 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -50,7 +41,8 @@ export default function LoginForm() {
     },
   });
 
-  const { isSubmitting } = form.formState;
+  const { register, handleSubmit, formState } = form;
+  const { errors, isSubmitting } = formState;
 
   const onSubmit = async (data: LoginValues) => {
     setError(null);
@@ -63,9 +55,7 @@ export default function LoginForm() {
       });
 
       if (result?.error) {
-        setError(
-          'Email atau password yang Anda masukkan salah. Silakan coba lagi.'
-        );
+        setError('Email atau password yang Anda masukkan salah. Silakan coba lagi.');
       }
     } catch (err) {
       setError('Terjadi kesalahan yang tidak diketahui.');
@@ -73,93 +63,100 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 px-4">
-      <Card className="w-full max-w-md shadow-xl border-0 rounded-2xl">
-        <CardHeader className="text-center space-y-1">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+      <Card className="w-full max-w-md shadow-lg border border-gray-200 rounded-xl">
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-800">Login</CardTitle>
-          <CardDescription className="text-gray-500 text-sm">
+          <CardDescription className="text-sm text-gray-500 mt-1">
             Masuk ke akun Anda untuk mulai mengelola toko oli
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="px-8 pb-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="contoh@email.com"
-                        {...field}
-                        className="h-11"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                {...register('email')}
+                placeholder="contoh@email.com"
+                className="h-11 px-4"
               />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Minimal 6 karakter"
-                          {...field}
-                          className="h-11 pr-10"
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          onClick={() => setShowPassword((prev) => !prev)}
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {error && (
-                <p className="text-red-600 bg-red-50 border border-red-200 text-sm rounded-lg p-3 text-center">
-                  {error}
-                </p>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
               )}
+            </div>
 
-              <Button
-                type="submit"
-                className="w-full h-11 font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-200"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Loading...' : 'Login'}
-              </Button>
-            </form>
-          </Form>
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  placeholder="Minimal 6 karakter"
+                  className="h-11 pr-10 px-4"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-10.5-7.5a10.08 10.08 0 011.986-3.272m3.127-2.63A9.967 9.967 0 0112 5c5 0 9.27 3.11 10.5 7.5a10.08 10.08 0 01-2.089 3.49m-1.86 1.645L4.22 4.22"
+                      />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 01-3 3m0-6a3 3 0 013 3m0 0a3 3 0 00-3-3m0 0a3 3 0 003 3m6 0a10 10 0 01-18 0 10 10 0 0118 0z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+              )}
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <p className="text-red-600 bg-red-50 border border-red-200 text-sm rounded-lg p-3">
+                {error}
+              </p>
+            )}
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-md hover:from-blue-700 hover:to-purple-700 transition-all"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Loading...' : 'Login'}
+            </Button>
+          </form>
         </CardContent>
 
-        <CardFooter className="text-center text-sm px-8 pb-6 text-gray-600 justify-center">
+        <CardFooter className="text-center text-sm text-gray-600">
           Belum punya akun?{' '}
-          <Link
-            href="/register"
-            className="text-blue-600 hover:text-blue-700 font-medium ml-1 hover:underline transition-colors duration-200"
-          >
+          <Link href="/register" className="text-blue-600 hover:underline ml-1">
             Daftar di sini
           </Link>
         </CardFooter>
