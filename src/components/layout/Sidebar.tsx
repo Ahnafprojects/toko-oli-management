@@ -17,6 +17,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { Button } from '../ui/button';
 
 const navItems = [
+   { href: '/home', label: 'Menu Utama', icon: Home },
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/transactions', label: 'Histori Transaksi', icon: History },
   { href: '/stock-history', label: 'Histori Stok', icon: Archive }, // ✅ Tambahan baru
