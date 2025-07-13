@@ -1,10 +1,8 @@
-// src/app/page.tsx
 import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  // Langsung arahkan pengguna ke halaman dashboard
-  // Middleware akan menangani jika pengguna belum login
-  redirect('/dashboard');
+  // Langsung arahkan pengguna ke halaman kasir
+  redirect('/pos'); // <-- Diubah ke sini
 
   // Tidak perlu merender apapun karena sudah dialihkan
   return null;
