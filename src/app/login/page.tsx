@@ -48,7 +48,7 @@ export default function LoginPage() {
     if (result?.error) {
       setError('Email atau password salah.');
     } else {
-      router.push('/dashboard');
+      router.push('/pos');
     }
   };
 
