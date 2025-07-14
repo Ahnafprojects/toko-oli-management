@@ -11,16 +11,19 @@ import {
   Drum,
   History,
   Archive,
+  Settings, // <-- Jangan lupa import ikon Settings
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '../ui/button';
 
+// Daftar navigasi yang sudah dirapikan
 const navItems = [
-   { href: '/home', label: 'Menu Utama', icon: Home },
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/home', label: 'Menu Utama', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Histori Transaksi', icon: History },
-  { href: '/stock-history', label: 'Histori Stok', icon: Archive }, // ✅ Tambahan baru
+  { href: '/stock-history', label: 'Histori Stok', icon: Archive },
   { href: '/pos', label: 'Kasir (POS)', icon: ShoppingCart },
   { href: '/products', label: 'Produk & Stok', icon: Package },
   { href: '/drums', label: 'Drum', icon: Drum },
@@ -67,15 +70,25 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer - User Info + Logout */}
+      {/* Footer - User Info + Settings + Logout */}
       {session && (
         <div className="px-4 py-5 border-t border-gray-100 bg-gray-50">
           <div className="text-xs text-gray-400 mb-1">Login sebagai</div>
-          <p className="text-sm font-medium text-gray-800 truncate">{session.user?.email}</p>
+          <p className="text-sm font-medium text-gray-800 truncate">{session.user?.name}</p>
+          <p className="text-xs text-gray-500 truncate">{session.user?.email}</p>
+          
+          {/* --- TOMBOL SETTINGS BARU --- */}
+          <Button asChild variant="ghost" className="mt-4 w-full justify-start text-sm text-gray-600">
+            <Link href="/settings">
+                <Settings className="w-4 h-4 mr-2" />
+                Pengaturan Akun
+            </Link>
+          </Button>
+          {/* --------------------------- */}
 
           <Button
             variant="ghost"
-            className="mt-3 w-full justify-start text-sm text-gray-600 hover:bg-red-100 hover:text-red-600"
+            className="mt-1 w-full justify-start text-sm text-gray-600 hover:bg-red-100 hover:text-red-600"
             onClick={() => signOut({ callbackUrl: '/login' })}
           >
             <LogOut className="w-4 h-4 mr-2" />

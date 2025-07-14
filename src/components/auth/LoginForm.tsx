@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -18,6 +18,8 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -31,6 +33,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(
     searchParams.get('error') ? 'Email atau password salah.' : null
   );
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginValues>({
@@ -41,11 +44,17 @@ export default function LoginForm() {
     },
   });
 
-  const { register, handleSubmit, formState } = form;
-  const { errors, isSubmitting } = formState;
+  const { isSubmitting } = form.formState;
+
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setSuccessMessage('Email berhasil diverifikasi! Silakan login.');
+    }
+  }, [searchParams]);
 
   const onSubmit = async (data: LoginValues) => {
     setError(null);
+    setSuccessMessage(null);
     try {
       const result = await signIn('credentials', {
         email: data.email,
@@ -63,104 +72,89 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <Card className="w-full max-w-md shadow-lg border border-gray-200 rounded-xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-800">Login</CardTitle>
-          <CardDescription className="text-sm text-gray-500 mt-1">
-            Masuk ke akun Anda untuk mulai mengelola toko oli
-          </CardDescription>
-        </CardHeader>
+    <Card className="w-full max-w-md shadow-lg">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold">Selamat Datang Kembali</CardTitle>
+        <CardDescription>Masuk untuk melanjutkan ke sistem Anda.</CardDescription>
+      </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                {...register('email')}
-                placeholder="contoh@email.com"
-                className="h-11 px-4"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+      <CardContent>
+        {successMessage && (
+          <div className="text-green-700 bg-green-50 border border-green-200 text-sm rounded-lg p-3 text-center mb-4">
+            {successMessage}
+          </div>
+        )}
+        {error && (
+          <div className="text-red-600 bg-red-50 border border-red-200 text-sm rounded-lg p-3 text-center mb-4">
+            {error}
+          </div>
+        )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="contoh@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  {...register('password')}
-                  placeholder="Minimal 6 karakter"
-                  className="h-11 pr-10 px-4"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-10.5-7.5a10.08 10.08 0 011.986-3.272m3.127-2.63A9.967 9.967 0 0112 5c5 0 9.27 3.11 10.5 7.5a10.08 10.08 0 01-2.089 3.49m-1.86 1.645L4.22 4.22"
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Masukkan password"
+                        {...field}
                       />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 01-3 3m0-6a3 3 0 013 3m0 0a3 3 0 00-3-3m0 0a3 3 0 003 3m6 0a10 10 0 01-18 0 10 10 0 0118 0z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <p className="text-red-600 bg-red-50 border border-red-200 text-sm rounded-lg p-3">
-                {error}
-              </p>
-            )}
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-md hover:from-blue-700 hover:to-purple-700 transition-all"
-              disabled={isSubmitting}
-            >
+            />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Loading...' : 'Login'}
             </Button>
           </form>
-        </CardContent>
+        </Form>
+      </CardContent>
 
-        <CardFooter className="text-center text-sm text-gray-600">
+      <CardFooter className="flex flex-col items-center text-sm text-gray-600 gap-3 pt-4">
+        <p>
           Belum punya akun?{' '}
-          <Link href="/register" className="text-blue-600 hover:underline ml-1">
+          <Link href="/register" className="text-blue-600 hover:underline font-medium">
             Daftar di sini
           </Link>
-        </CardFooter>
-      </Card>
-    </div>
+        </p>
+        
+        {/* --- LINK LUPA PASSWORD BARU --- */}
+        <Link href="/forgot-password" className="text-xs text-gray-500 hover:underline">
+          Lupa Password?
+        </Link>
+        {/* ----------------------------- */}
+      </CardFooter>
+    </Card>
   );
 }

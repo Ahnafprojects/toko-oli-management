@@ -17,7 +17,6 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          // Jika input tidak lengkap, tolak dengan mengembalikan null
           return null;
         }
 
@@ -25,22 +24,29 @@ export const authOptions: AuthOptions = {
           where: { email: credentials.email },
         });
 
-        // Jika user tidak ditemukan atau tidak punya password, tolak.
         if (!user || !user.password) {
           return null;
         }
+
+        // --- PENGECEKAN BARU DI SINI ---
+        // Jika kolom emailVerified masih kosong (null), jangan izinkan login.
+        if (!user.emailVerified) {
+          // Melempar error ini akan menghentikan proses dan bisa ditangkap di halaman login
+          // untuk menampilkan pesan yang lebih spesifik jika Anda mau.
+          // Untuk sekarang, ini akan menghasilkan error login umum.
+          throw new Error("Email belum diverifikasi. Silakan cek kotak masuk Anda.");
+        }
+        // ------------------------------------
 
         const isPasswordCorrect = await bcrypt.compare(
           credentials.password,
           user.password
         );
 
-        // Jika password salah, tolak.
         if (!isPasswordCorrect) {
           return null;
         }
 
-        // Jika semua benar, kembalikan objek user untuk memulai sesi.
         return user;
       },
     }),
@@ -67,8 +73,7 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',
-    // Halaman error akan otomatis ditangani oleh NextAuth
-    // dengan mengarahkan kembali ke halaman login dengan query ?error=...
+    error: '/auth/error',
   },
   debug: process.env.NODE_ENV === 'development',
 };
