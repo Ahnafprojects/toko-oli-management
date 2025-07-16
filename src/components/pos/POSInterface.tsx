@@ -109,7 +109,7 @@ export default function POSInterface() {
   }, [searchTerm]);
 
   const handleProductSelect = useCallback((product: ProductWithCategory) => {
-    const itemInCart = cart.find(item => item.productId === product.id);
+    const itemInCart = cart.find(item => item.productId === product.id && !item.isDrumSale);
     const qtyInCart = itemInCart?.quantity || 0;
 
     if ((product.stock ?? 0) <= qtyInCart) {
@@ -121,13 +121,27 @@ export default function POSInterface() {
       setSelectedProduct(product);
       setIsQuantityModalOpen(true);
     } else {
-      addToCart(product, 1);
+      // --- PERBAIKAN: Konversi harga dari Decimal ke number dan format yang benar ---
+      const productToAdd = {
+        ...product,
+        buyPrice: Number(product.buyPrice),
+        sellPrice: Number(product.sellPrice),
+      };
+      // Panggil addToCart dengan format yang benar
+      addToCart(productToAdd, { quantity: 1 });
     }
   }, [cart, addToCart]);
 
   const handleQuantityConfirm = useCallback((quantity: number) => {
     if (selectedProduct) {
-      addToCart(selectedProduct, quantity);
+      // --- PERBAIKAN: Konversi harga dari Decimal ke number dan format yang benar ---
+      const productToAdd = {
+        ...selectedProduct,
+        buyPrice: Number(selectedProduct.buyPrice),
+        sellPrice: Number(selectedProduct.sellPrice),
+      };
+      // Panggil addToCart dengan format yang benar
+      addToCart(productToAdd, { quantity: quantity });
     }
     setIsQuantityModalOpen(false);
     setSelectedProduct(null);
