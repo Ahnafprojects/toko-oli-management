@@ -2,16 +2,16 @@ import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { Product } from '@prisma/client';
 
-// Tipe untuk produk yang bisa ditambahkan ke keranjang (harga sudah berupa number)
+// Tipe untuk produk yang bisa ditambahkan (harga SUDAH berupa number)
 type ProductToAdd = Omit<Product, 'buyPrice' | 'sellPrice' | 'createdAt' | 'updatedAt' | 'expiredDate'> & {
   buyPrice: number;
   sellPrice: number;
 };
 
-// Tipe untuk item di dalam keranjang (tidak lagi extends Product)
+// Tipe untuk item di dalam keranjang
 export type CartItem = {
-  cartItemId: string; // ID unik untuk setiap baris di keranjang
-  productId: string;  // ID asli produk dari database
+  cartItemId: string;
+  productId: string;
   name: string;
   price: number;
   quantity: number;
@@ -37,19 +37,17 @@ export const useCartStore = create<CartState>((set, get) => ({
   
   addToCart: (product, details) => {
     const { quantity, isDrumSale, quantitySoldMl, price } = details;
-    const cart = get().cart;
     const stock = isDrumSale ? product.currentVolumeMl ?? 0 : product.stock;
     const requestedAmount = isDrumSale ? quantitySoldMl! : quantity;
 
-    // 1. Validasi Stok Awal
     if (stock < requestedAmount) {
       toast.error(`Stok/Volume untuk ${product.name} tidak mencukupi. Sisa: ${stock}`);
       return false;
     }
 
+    const cart = get().cart;
     let updatedCart;
     
-    // 2. Jika produk biasa (bukan drum), cek item yang sudah ada dan gabungkan
     if (!isDrumSale) {
       const existingItem = cart.find(item => item.productId === product.id && !item.isDrumSale);
       if (existingItem) {
@@ -65,16 +63,15 @@ export const useCartStore = create<CartState>((set, get) => ({
       }
     }
 
-    // 3. Untuk item baru atau penjualan drum, selalu buat baris baru
     const newCartItem: CartItem = {
       cartItemId: `${isDrumSale ? 'drum' : 'item'}-${product.id}-${Date.now()}`,
       productId: product.id,
       name: isDrumSale ? `${product.name} (Eceran ${quantitySoldMl}ml)` : product.name,
       price: price || product.sellPrice,
-      quantity: quantity,
-      stock: stock,
+      quantity,
+      stock,
       isDrumSale: !!isDrumSale,
-      quantitySoldMl: quantitySoldMl,
+      quantitySoldMl,
     };
     updatedCart = [...cart, newCartItem];
     set({ cart: updatedCart, total: calculateTotal(updatedCart) });
