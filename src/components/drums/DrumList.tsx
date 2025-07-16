@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -25,18 +26,25 @@ interface DrumListProps {
 export default function DrumList({ initialDrums }: DrumListProps) {
   const router = useRouter();
   const { addToCart } = useCartStore();
-  
+
   // State untuk mengontrol modal mana yang terbuka
   const [drumToSell, setDrumToSell] = useState<SafeDrumProduct | null>(null);
   const [drumToUpdate, setDrumToUpdate] = useState<SafeDrumProduct | null>(null);
-  
+
   // Fungsi ini dipanggil dari dalam DrumSaleModal setelah sukses
   const handleSaleSuccess = (drum: SafeDrumProduct, saleDetails: { quantitySoldMl: number; salePrice: number; }) => {
-    // Memanggil addToCart dari store dengan data yang benar
+    // Konversi ke tipe Product agar kompatibel
+    const drumAsProduct: Product = {
+      ...drum,
+      buyPrice: new Decimal(drum.buyPrice),
+      sellPrice: new Decimal(drum.sellPrice),
+    };
+
+    // Panggil addToCart dengan data benar
     const wasAdded = addToCart(
-      drum, 
+      drumAsProduct,
       {
-        quantity: 1, // Penjualan eceran dianggap 1 item
+        quantity: 1,
         isDrumSale: true,
         quantitySoldMl: saleDetails.quantitySoldMl,
         price: saleDetails.salePrice
@@ -44,8 +52,8 @@ export default function DrumList({ initialDrums }: DrumListProps) {
     );
 
     if (wasAdded) {
-      setDrumToSell(null); // Tutup modal
-      router.push('/pos'); // Arahkan ke kasir
+      setDrumToSell(null);
+      router.push('/pos');
     }
   };
 
@@ -57,7 +65,7 @@ export default function DrumList({ initialDrums }: DrumListProps) {
           const percentage = drum.initialVolumeMl && drum.currentVolumeMl
             ? (drum.currentVolumeMl / drum.initialVolumeMl) * 100
             : 0;
-          
+
           return (
             <Card key={drum.id}>
               <CardHeader>
@@ -81,14 +89,14 @@ export default function DrumList({ initialDrums }: DrumListProps) {
                 </Button>
                 <Button variant="secondary" className="w-full" onClick={() => setDrumToUpdate(drum)}>
                   <Edit className="w-4 h-4 mr-2" />
-                   Update
+                  Update
                 </Button>
               </CardFooter>
             </Card>
           );
         })}
       </div>
-      
+
       <DrumSaleModal
         isOpen={!!drumToSell}
         onClose={() => setDrumToSell(null)}
@@ -101,8 +109,8 @@ export default function DrumList({ initialDrums }: DrumListProps) {
         onClose={() => setDrumToUpdate(null)}
         drum={drumToUpdate}
         onSuccess={() => {
-            setDrumToUpdate(null);
-            router.refresh();
+          setDrumToUpdate(null);
+          router.refresh();
         }}
       />
     </>
