@@ -16,7 +16,7 @@ export const config = {
     "/transactions/:path*",
     "/stock-history/:path*",
     "/pos/:path*",
-    "/Drum/:path*/",
+    "/drum/:path*/",
     "/products/:path*",
     "/suppliers/:path*",
   ] 
