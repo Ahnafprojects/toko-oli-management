@@ -53,3 +53,33 @@
     color: var(--foreground);
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #receipt {
+    visibility: visible;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #receipt,
+  #receipt * {
+    visibility: visible;
+  }
+
+  #receipt {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}

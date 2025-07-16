@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import path from 'path';
@@ -8,46 +7,45 @@ const prisma = new PrismaClient();
 async function main() {
   console.log(`Mulai proses seeding...`);
 
-  // --- Seeding Kategori ---
+  // --- 1. Seeding Kategori ---
   const categoriesToSeed = [ { name: 'Oli Mesin Mobil' }, { name: 'Oli Mesin Motor' }, { name: 'Oli Gardan' }, { name: 'Minyak Rem' }, { name: 'Filter Oli' }, { name: 'Umum' } ];
   for (const cat of categoriesToSeed) {
     await prisma.category.upsert({ where: { name: cat.name }, update: {}, create: { name: cat.name } });
   }
+  const defaultCategory = await prisma.category.findUnique({ where: { name: 'Umum' } });
+  if (!defaultCategory) {
+    throw new Error("Kategori 'Umum' tidak ditemukan. Pastikan sudah ada di daftar seed.");
+  }
   console.log('Seeding kategori selesai.');
 
-  // --- Seeding Produk dari Excel ---
+  // --- 2. Seeding Produk dari Excel ---
   console.log('Mulai impor produk dari Excel...');
   
   const filePath = path.join(__dirname, 'data_produk.xlsx');
   const workbook = XLSX.readFile(filePath);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  
-  // Mengubah sheet menjadi array dari array (baris dan kolom)
   const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
   const productsToCreate = [];
   
-  // Mengambil kategori 'Umum' sebagai default
-  const defaultCategory = await prisma.category.findUnique({ where: { name: 'Umum' } });
-  if (!defaultCategory) {
-    throw new Error("Kategori 'Umum' tidak ditemukan.");
-  }
-
-  // Iterasi melalui setiap baris, dimulai dari baris kedua (indeks 1) karena baris pertama adalah header
+  // Iterasi melalui setiap baris data Excel
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
 
-    // Proses blok kolom pertama (A, B, C), kedua (E, F, G), ketiga (I, J, K), dst.
-    for (let j = 0; j < row.length; j += 4) { // Melompat 4 kolom setiap kali
+    // Proses setiap blok kolom (NAMA, AMBIL, HARGA) di dalam satu baris
+    for (let j = 0; j < row.length; j += 4) { // Melompat 4 kolom (3 data + 1 pemisah)
       const productName = row[j];
       const buyPrice = row[j + 1];
       const sellPrice = row[j + 2];
 
-      // PENTING: Hanya proses jika semua data ada dan valid
-      if (productName && typeof buyPrice === 'number' && typeof sellPrice === 'number') {
+      // --- LOGIKA BARU YANG LEBIH KETAT ---
+      // Hanya proses jika Nama, Harga Beli, dan Harga Jual semuanya ada dan valid
+      if (productName && typeof productName === 'string' && productName.trim() !== '' &&
+          typeof buyPrice === 'number' && typeof sellPrice === 'number') {
+        
         productsToCreate.push({
-          name: String(productName),
+          name: String(productName).trim(),
           buyPrice: new Prisma.Decimal(buyPrice),
           sellPrice: new Prisma.Decimal(sellPrice),
           unit: 'Botol', 
@@ -55,20 +53,21 @@ async function main() {
           stock: 0,
           minStock: 5,
         });
+
       } else if (productName) {
-        // Beri peringatan jika ada produk dengan data harga yang hilang
-        console.warn(`Melewati produk "${productName}" karena data harga tidak lengkap.`);
+        // Beri tahu produk mana yang dilewati karena datanya tidak lengkap
+        console.warn(`- Melewati produk "${productName}" karena data harga tidak lengkap.`);
       }
     }
   }
 
   if (productsToCreate.length > 0) {
-    // Masukkan semua produk yang valid ke database
+    console.log(`Mempersiapkan untuk mengimpor ${productsToCreate.length} produk yang valid...`);
     const result = await prisma.product.createMany({
       data: productsToCreate,
-      skipDuplicates: true, // Lewati jika ada produk dengan nama yang sama
+      skipDuplicates: true, // Lewati jika ada nama produk yang sama persis
     });
-    console.log(`${result.count} produk baru berhasil diimpor dari Excel.`);
+    console.log(`✅ ${result.count} produk baru berhasil diimpor dari Excel.`);
   } else {
     console.log('Tidak ada produk valid yang ditemukan di file Excel untuk diimpor.');
   }

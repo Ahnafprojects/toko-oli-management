@@ -6,10 +6,12 @@ import { Product } from '@prisma/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Droplets } from 'lucide-react';
+import { Droplets, Edit, Pipette } from 'lucide-react';
 import DrumSaleModal from './DrumSaleModal';
+import UpdateVolumeModal from './UpdateVolumeModal';
 import { useCartStore } from '@/store/cartStore';
 import { useRouter } from 'next/navigation';
+import { Toaster } from 'react-hot-toast';
 
 type DrumProduct = Omit<Product, 'buyPrice'|'sellPrice'> & {
   buyPrice: number;
@@ -19,47 +21,49 @@ type DrumProduct = Omit<Product, 'buyPrice'|'sellPrice'> & {
 export default function DrumDashboard() {
   const [drums, setDrums] = useState<DrumProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDrum, setSelectedDrum] = useState<DrumProduct | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // STATE UNTUK MENGONTROL MODAL
+  const [drumForSale, setDrumForSale] = useState<DrumProduct | null>(null);
+  const [drumToUpdate, setDrumToUpdate] = useState<DrumProduct | null>(null);
 
   const router = useRouter();
   const { addToCart } = useCartStore();
 
   const fetchDrums = async () => {
     setLoading(true);
-    const response = await fetch('/api/drums');
-    const data = await response.json();
-    const safeData = data.map((d: Product) => ({
+    try {
+      const response = await fetch('/api/drums');
+      const data = await response.json();
+      const safeData = data.map((d: Product) => ({
         ...d,
         buyPrice: Number(d.buyPrice),
         sellPrice: Number(d.sellPrice)
-    }));
-    setDrums(safeData);
-    setLoading(false);
+      }));
+      setDrums(safeData);
+    } catch (error) {
+      console.error("Gagal memuat data drum:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchDrums();
   }, []);
 
-  const handleOpenSaleModal = (drum: DrumProduct) => {
-    setSelectedDrum(drum);
-    setIsModalOpen(true);
-  };
-
   // PERBAIKAN: Logika ini tidak lagi memanggil API
   const handleSaleSuccess = (values: { quantitySoldMl: number; salePrice: number; }) => {
-    if (!selectedDrum) return;
+    if (!drumForSale) return;
     
     // 1. Buat produk "virtual" untuk keranjang
     const customCartItem: any = {
       // Gunakan ID asli drum untuk referensi, tapi tambahkan suffix unik
       // agar bisa dibedakan jika ada beberapa penjualan dari drum yang sama
-      id: `drum-sale-${selectedDrum.id}-${Date.now()}`, 
-      originalProductId: selectedDrum.id, // Simpan ID asli drum
+      id: `drum-sale-${drumForSale.id}-${Date.now()}`, 
+      originalProductId: drumForSale.id, // Simpan ID asli drum
       isDrumSale: true, // Penanda bahwa ini adalah penjualan drum
       quantitySoldMl: values.quantitySoldMl, // Simpan jumlah ml yang dijual
-      name: `${selectedDrum.name} (Eceran ${values.quantitySoldMl} ml)`,
+      name: `${drumForSale.name} (Eceran ${values.quantitySoldMl} ml)`,
       sellPrice: values.salePrice, // Harga jual adalah total harga dari modal
       stock: Infinity, // Stok tidak relevan untuk item virtual ini
       unit: 'paket',
@@ -69,26 +73,32 @@ export default function DrumDashboard() {
     addToCart(customCartItem, 1);
 
     // 3. Tutup modal dan arahkan ke kasir
-    setIsModalOpen(false);
+    setDrumForSale(null);
     alert("Penjualan eceran berhasil ditambahkan ke kasir!");
     router.push('/pos');
+  };
+
+  const handleUpdateSuccess = () => {
+    setDrumToUpdate(null); // Tutup modal update
+    fetchDrums(); // Ambil ulang data drum untuk melihat volume terbaru
   };
 
   if (loading) return <div>Memuat data drum...</div>;
   
   if (!loading && drums.length === 0) {
     return (
-        <div className="text-center p-8 border rounded-lg bg-gray-50">
-            <h3 className="text-xl font-semibold">Belum Ada Produk Drum</h3>
-            <p className="text-muted-foreground mt-2">
-                Silakan tambahkan produk baru dan tandai sebagai "Drum" untuk mulai mengelola penjualan eceran.
-            </p>
-        </div>
+      <div className="text-center p-8 border rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold">Belum Ada Produk Drum</h3>
+        <p className="text-muted-foreground mt-2">
+          Silakan tambahkan produk baru dan tandai sebagai "Drum" untuk mulai mengelola penjualan eceran.
+        </p>
+      </div>
     )
   }
 
   return (
     <>
+      <Toaster position="top-center" />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {drums.map((drum) => {
           const percentage = drum.initialVolumeMl && drum.currentVolumeMl
@@ -103,23 +113,21 @@ export default function DrumDashboard() {
                   {drum.name}
                 </CardTitle>
                 <CardDescription>
-                  Satuan Beli: {drum.unit}
+                  Sisa Volume: <strong>{drum.currentVolumeMl?.toLocaleString() || 0}</strong> / {drum.initialVolumeMl?.toLocaleString() || 0} ml
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                    <span>Sisa Volume</span>
-                    <span className="font-semibold text-foreground">
-                      {drum.currentVolumeMl?.toLocaleString() || 0} / {drum.initialVolumeMl?.toLocaleString() || 0} ml
-                    </span>
-                  </div>
-                  <Progress value={percentage} />
-                </div>
+              <CardContent>
+                <Progress value={percentage} className="h-2" />
               </CardContent>
-              <CardFooter>
-                <Button className="w-full" onClick={() => handleOpenSaleModal(drum)} disabled={drum.currentVolumeMl === 0}>
+              <CardFooter className="grid grid-cols-2 gap-2">
+                <Button className="w-full" onClick={() => setDrumForSale(drum)} disabled={(drum.currentVolumeMl ?? 0) === 0}>
+                  <Pipette className="w-4 h-4 mr-2" />
                   {drum.currentVolumeMl === 0 ? 'Volume Habis' : 'Jual Eceran'}
+                </Button>
+                {/* TOMBOL UPDATE VOLUME */}
+                <Button variant="secondary" className="w-full" onClick={() => setDrumToUpdate(drum)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update Volume
                 </Button>
               </CardFooter>
             </Card>
@@ -127,11 +135,20 @@ export default function DrumDashboard() {
         })}
       </div>
       
+      {/* Modal Penjualan Eceran */}
       <DrumSaleModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        drum={selectedDrum}
+        isOpen={!!drumForSale}
+        onClose={() => setDrumForSale(null)}
+        drum={drumForSale}
         onSuccess={handleSaleSuccess}
+      />
+      
+      {/* MODAL UPDATE VOLUME */}
+      <UpdateVolumeModal
+        isOpen={!!drumToUpdate}
+        onClose={() => setDrumToUpdate(null)}
+        drum={drumToUpdate}
+        onSuccess={handleUpdateSuccess}
       />
     </>
   );
