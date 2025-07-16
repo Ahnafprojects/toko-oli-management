@@ -1,84 +1,109 @@
-// src/store/cartStore.ts
 import { create } from 'zustand';
+import toast from 'react-hot-toast';
 import { Product } from '@prisma/client';
 
-export interface CartItem extends Product {
+// Tipe untuk produk yang bisa ditambahkan ke keranjang (harga sudah berupa number)
+type ProductToAdd = Omit<Product, 'buyPrice' | 'sellPrice' | 'createdAt' | 'updatedAt' | 'expiredDate'> & {
+  buyPrice: number;
+  sellPrice: number;
+};
+
+// Tipe untuk item di dalam keranjang (tidak lagi extends Product)
+export type CartItem = {
+  cartItemId: string; // ID unik untuk setiap baris di keranjang
+  productId: string;  // ID asli produk dari database
+  name: string;
+  price: number;
   quantity: number;
-}
+  stock: number;
+  isDrumSale: boolean;
+  quantitySoldMl?: number;
+};
 
 interface CartState {
   cart: CartItem[];
   total: number;
-  addToCart: (product: Product, quantity: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: ProductToAdd, details: { quantity: number; isDrumSale?: boolean; quantitySoldMl?: number; price?: number }) => boolean;
+  updateQuantity: (cartItemId: string, amount: number) => void;
+  removeFromCart: (cartItemId: string) => void;
   clearCart: () => void;
 }
 
-// Menghitung total dengan memastikan harga valid
-const calculateTotal = (cart: CartItem[]) =>
-  cart.reduce((acc, item) => {
-    const price = Number(item.sellPrice);
-    if (isNaN(price)) {
-      console.warn(`Harga produk tidak valid untuk ${item.name}:`, item.sellPrice);
-      return acc;
-    }
-    return acc + price * item.quantity;
-  }, 0);
+const calculateTotal = (cart: CartItem[]) => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-export const useCartStore = create<CartState>((set) => ({
+export const useCartStore = create<CartState>((set, get) => ({
   cart: [],
   total: 0,
+  
+  addToCart: (product, details) => {
+    const { quantity, isDrumSale, quantitySoldMl, price } = details;
+    const cart = get().cart;
+    const stock = isDrumSale ? product.currentVolumeMl ?? 0 : product.stock;
+    const requestedAmount = isDrumSale ? quantitySoldMl! : quantity;
 
-  addToCart: (product, quantity) =>
-    set((state) => {
-      if (!quantity || quantity <= 0) {
-        console.warn(`Quantity tidak valid saat addToCart untuk ${product.name}:`, quantity);
-        return state;
-      }
+    // 1. Validasi Stok Awal
+    if (stock < requestedAmount) {
+      toast.error(`Stok/Volume untuk ${product.name} tidak mencukupi. Sisa: ${stock}`);
+      return false;
+    }
 
-      const price = Number(product.sellPrice);
-      if (isNaN(price) || price < 0) {
-        console.warn(`Harga produk tidak valid saat addToCart untuk ${product.name}:`, product.sellPrice);
-        return state;
-      }
-
-      const existingItem = state.cart.find((item) => item.id === product.id);
-      let updatedCart: CartItem[];
-
+    let updatedCart;
+    
+    // 2. Jika produk biasa (bukan drum), cek item yang sudah ada dan gabungkan
+    if (!isDrumSale) {
+      const existingItem = cart.find(item => item.productId === product.id && !item.isDrumSale);
       if (existingItem) {
-        updatedCart = state.cart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      } else {
-        updatedCart = [...state.cart, { ...product, quantity }];
+        const newQuantity = existingItem.quantity + quantity;
+        if (stock < newQuantity) {
+          toast.error(`Stok ${product.name} tidak mencukupi.`);
+          return false;
+        }
+        updatedCart = cart.map(item => item.productId === product.id ? { ...item, quantity: newQuantity } : item);
+        toast.success(`${product.name} ditambahkan.`);
+        set({ cart: updatedCart, total: calculateTotal(updatedCart) });
+        return true;
       }
+    }
 
-      const total = calculateTotal(updatedCart);
-      return { cart: updatedCart, total };
-    }),
+    // 3. Untuk item baru atau penjualan drum, selalu buat baris baru
+    const newCartItem: CartItem = {
+      cartItemId: `${isDrumSale ? 'drum' : 'item'}-${product.id}-${Date.now()}`,
+      productId: product.id,
+      name: isDrumSale ? `${product.name} (Eceran ${quantitySoldMl}ml)` : product.name,
+      price: price || product.sellPrice,
+      quantity: quantity,
+      stock: stock,
+      isDrumSale: !!isDrumSale,
+      quantitySoldMl: quantitySoldMl,
+    };
+    updatedCart = [...cart, newCartItem];
+    set({ cart: updatedCart, total: calculateTotal(updatedCart) });
+    toast.success(`${newCartItem.name} ditambahkan ke keranjang.`);
+    return true;
+  },
 
-  removeFromCart: (productId) =>
-    set((state) => {
-      const updatedCart = state.cart.filter((item) => item.id !== productId);
-      return { cart: updatedCart, total: calculateTotal(updatedCart) };
-    }),
-
-  updateQuantity: (productId, quantity) =>
-    set((state) => {
-      if (quantity < 1) {
-        const updatedCart = state.cart.filter((item) => item.id !== productId);
-        return { cart: updatedCart, total: calculateTotal(updatedCart) };
+  updateQuantity: (cartItemId, amount) => {
+    set(state => {
+      const itemToUpdate = state.cart.find(item => item.cartItemId === cartItemId);
+      if (!itemToUpdate) return state;
+      const newQuantity = itemToUpdate.quantity + amount;
+      if (!itemToUpdate.isDrumSale && amount > 0 && newQuantity > itemToUpdate.stock) {
+        toast.error(`Stok ${itemToUpdate.name} tidak mencukupi.`);
+        return state;
       }
-
-      const updatedCart = state.cart.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      );
-
+      const updatedCart = state.cart.map(item =>
+        item.cartItemId === cartItemId ? { ...item, quantity: Math.max(0, newQuantity) } : item
+      ).filter(item => item.quantity > 0);
       return { cart: updatedCart, total: calculateTotal(updatedCart) };
-    }),
-
+    });
+  },
+  
+  removeFromCart: (cartItemId: string) => {
+    set((state) => {
+      const updatedCart = state.cart.filter((item) => item.cartItemId !== cartItemId);
+      return { cart: updatedCart, total: calculateTotal(updatedCart) };
+    });
+  },
+    
   clearCart: () => set({ cart: [], total: 0 }),
 }));
