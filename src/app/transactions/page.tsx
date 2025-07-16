@@ -1,5 +1,6 @@
 // src/app/transactions/page.tsx
 import TransactionList from "@/components/transactions/TransactionList";
+export const dynamic = 'force-dynamic';
 
 export default function TransactionsPage() {
   return (
