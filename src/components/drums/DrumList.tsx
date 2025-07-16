@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +11,7 @@ import DrumSaleModal from './DrumSaleModal';
 import UpdateVolumeModal from './UpdateVolumeModal';
 import { useCartStore } from '@/store/cartStore';
 import { Toaster } from 'react-hot-toast';
+import Decimal from 'decimal.js';
 
 // Tipe data yang aman yang diterima dari server
 type SafeDrumProduct = Omit<Product, 'buyPrice' | 'sellPrice'> & {
@@ -33,23 +33,19 @@ export default function DrumList({ initialDrums }: DrumListProps) {
 
   // Fungsi ini dipanggil dari dalam DrumSaleModal setelah sukses
   const handleSaleSuccess = (drum: SafeDrumProduct, saleDetails: { quantitySoldMl: number; salePrice: number; }) => {
-    // Konversi ke tipe Product agar kompatibel
-    const drumAsProduct: Product = {
+    const customCartItem: any = {
       ...drum,
-      buyPrice: new Decimal(drum.buyPrice),
-      sellPrice: new Decimal(drum.sellPrice),
+      id: `drum-sale-${drum.id}-${Date.now()}`,
+      originalProductId: drum.id,
+      isDrumSale: true,
+      quantitySoldMl: saleDetails.quantitySoldMl,
+      name: `${drum.name} (Eceran ${saleDetails.quantitySoldMl} ml)`,
+      sellPrice: new Decimal(saleDetails.salePrice),
+      stock: Infinity,
+      unit: 'paket',
     };
 
-    // Panggil addToCart dengan data benar
-    const wasAdded = addToCart(
-      drumAsProduct,
-      {
-        quantity: 1,
-        isDrumSale: true,
-        quantitySoldMl: saleDetails.quantitySoldMl,
-        price: saleDetails.salePrice
-      }
-    );
+    const wasAdded = addToCart(customCartItem, 1);
 
     if (wasAdded) {
       setDrumToSell(null);
@@ -89,7 +85,7 @@ export default function DrumList({ initialDrums }: DrumListProps) {
                 </Button>
                 <Button variant="secondary" className="w-full" onClick={() => setDrumToUpdate(drum)}>
                   <Edit className="w-4 h-4 mr-2" />
-                  Update
+                   Update
                 </Button>
               </CardFooter>
             </Card>
@@ -109,8 +105,8 @@ export default function DrumList({ initialDrums }: DrumListProps) {
         onClose={() => setDrumToUpdate(null)}
         drum={drumToUpdate}
         onSuccess={() => {
-          setDrumToUpdate(null);
-          router.refresh();
+            setDrumToUpdate(null);
+            router.refresh();
         }}
       />
     </>
