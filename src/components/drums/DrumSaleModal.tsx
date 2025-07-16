@@ -1,6 +1,6 @@
 // src/components/drums/DrumSaleModal.tsx
 'use client';
-
+export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
