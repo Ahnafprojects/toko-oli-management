@@ -1,7 +1,7 @@
 // src/app/drums/page.tsx
 import DrumDashboard from "@/components/drums/DrumDashboard";
 export const dynamic = 'force-dynamic';
-
+//shds
 export default function DrumsPage() {
   return (
     <div className="space-y-6">
