@@ -3,27 +3,27 @@
 
 import { useCartStore } from '@/store/cartStore';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Import Input
+import { Input } from '@/components/ui/input';
 import { MinusCircle, PlusCircle, ShoppingCart, Trash2 } from 'lucide-react';
 
 export default function CartItems() {
   const { cart, updateQuantity, removeFromCart } = useCartStore();
 
-  const handleQuantityChange = (itemId: string, newQuantity: string) => {
+  const handleQuantityChange = (cartItemId: string, newQuantity: string) => {
     const quantity = parseInt(newQuantity, 10);
     // Hanya update jika input adalah angka yang valid dan lebih dari 0
     if (!isNaN(quantity) && quantity > 0) {
-      updateQuantity(itemId, quantity);
+      updateQuantity(cartItemId, quantity);
     } else if (newQuantity === '') {
       // Jika input dikosongkan, jangan lakukan apa-apa sementara
       // Biarkan onBlur yang menanganinya
     }
   };
 
-  const handleBlur = (itemId: string, currentQuantity: number) => {
+  const handleBlur = (cartItemId: string, currentQuantity: number) => {
     // Jika input ditinggalkan kosong, kembalikan ke 1
     if (currentQuantity === 0 || isNaN(currentQuantity)) {
-      updateQuantity(itemId, 1);
+      updateQuantity(cartItemId, 1);
     }
   };
 
@@ -40,25 +40,33 @@ export default function CartItems() {
   return (
     <div className="space-y-4">
       {cart.map((item) => (
-        <div key={item.id} className="flex items-center gap-4 text-sm">
+        <div key={item.cartItemId} className="flex items-center gap-4 text-sm">
           <div className="flex-1 min-w-0">
             <p className="font-semibold leading-tight" title={item.name}>{item.name}</p>
             <p className="text-xs text-muted-foreground">
-              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(item.sellPrice))}
+              {new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR', 
+                minimumFractionDigits: 0 
+              }).format(Number(item.price))}
             </p>
           </div>
 
           <div className="flex-shrink-0 font-semibold w-24 text-right">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(item.sellPrice) * item.quantity)}
+            {new Intl.NumberFormat('id-ID', { 
+              style: 'currency', 
+              currency: 'IDR', 
+              minimumFractionDigits: 0 
+            }).format(Number(item.price) * item.quantity)}
           </div>
 
-          {/* PERBAIKAN: Kontrol Kuantitas dengan Input */}
+          {/* Kontrol Kuantitas dengan Input */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <Button
               size="icon"
               variant="outline"
               className="h-7 w-7"
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+              onClick={() => updateQuantity(item.cartItemId, -1)}
               disabled={item.quantity === 1}
             >
               <MinusCircle className="h-4 w-4" />
@@ -67,14 +75,14 @@ export default function CartItems() {
               type="text"
               className="h-7 w-12 text-center font-bold"
               value={item.quantity}
-              onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-              onBlur={() => handleBlur(item.id, item.quantity)}
+              onChange={(e) => handleQuantityChange(item.cartItemId, e.target.value)}
+              onBlur={() => handleBlur(item.cartItemId, item.quantity)}
             />
             <Button
               size="icon"
               variant="outline"
               className="h-7 w-7"
-              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+              onClick={() => updateQuantity(item.cartItemId, 1)}
             >
               <PlusCircle className="h-4 w-4" />
             </Button>
@@ -84,7 +92,7 @@ export default function CartItems() {
             size="icon"
             variant="ghost"
             className="h-7 w-7 text-muted-foreground hover:text-red-500 flex-shrink-0"
-            onClick={() => removeFromCart(item.id)}
+            onClick={() => removeFromCart(item.cartItemId)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
