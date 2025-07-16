@@ -69,8 +69,13 @@ export default function DrumDashboard() {
       unit: 'paket',
     };
 
-    // 2. Tambahkan ke keranjang dengan kuantitas 1 (sebagai satu paket)
-    addToCart(customCartItem, 1);
+  // src/components/drums/DrumDashboard.tsx, PERBAIKAN
+
+// 2. Tambahkan ke keranjang dengan kuantitas 1 (sebagai satu paket)
+addToCart({
+  ...customCartItem, // Ambil semua properti dari item virtual yang sudah Anda buat
+  quantity: 1,      // Tambahkan properti 'quantity' di dalam objek ini
+});
 
     // 3. Tutup modal dan arahkan ke kasir
     setDrumForSale(null);
