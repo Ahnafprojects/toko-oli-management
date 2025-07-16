@@ -1,6 +1,6 @@
 // src/components/drums/DrumDashboard.tsx
 'use client';
-
+export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { Product } from '@prisma/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
