@@ -1,4 +1,4 @@
-// src/components/Receipt.tsx
+// src/components/pos/Receipt.tsx
 'use client';
 import { CartItem } from '@/store/cartStore';
 import React from 'react';
@@ -22,6 +22,7 @@ const formatCurrency = (amount: number | null | undefined): string => {
   }).format(amount);
 };
 
+// Fungsi getPrice ini sudah bagus, tidak perlu diubah.
 const getPrice = (value: unknown): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') return parseFloat(value);
@@ -32,7 +33,8 @@ const getPrice = (value: unknown): number => {
 };
 
 const calculateTotal = (items: CartItem[]) => {
-  return items.reduce((acc, item) => acc + getPrice(item.sellPrice) * item.quantity, 0);
+  // PERBAIKAN 1: Gunakan 'item.price' bukan 'item.sellPrice'
+  return items.reduce((acc, item) => acc + getPrice(item.price) * item.quantity, 0);
 };
 
 export const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
@@ -61,9 +63,11 @@ export const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, re
       </div>
       <div className="border-t border-dashed border-black my-2" />
       {items.map((item) => {
-        const price = getPrice(item.sellPrice);
+        // PERBAIKAN 2: Gunakan 'item.price' bukan 'item.sellPrice'
+        const price = getPrice(item.price);
         return (
-          <div key={item.id} className="mb-1">
+          // PERBAIKAN 3: Gunakan 'item.cartItemId' sebagai key
+          <div key={item.cartItemId} className="mb-1">
             <p>{item.name}</p>
             <div className="flex justify-between">
               <span>{item.quantity} x {formatCurrency(price)}</span>
